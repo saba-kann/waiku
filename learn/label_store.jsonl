@@ -1,0 +1,2 @@
+{"duration": 2.2, "n_notes": 15, "pitch_range": 0, "returns_to_start": 1, "rate_hz": 6.8, "is_repeat_block": 1, "voice_smooth": 0.1, "label": "keep_separate", "note": "88-106秒のトリル。0.16秒間隔=8分音符ぴったり。Whisperで別箇所の歌詞反復句と同じリズム構造を確認"}
+{"duration": 0.55, "n_notes": 4, "pitch_range": 2, "returns_to_start": 1, "rate_hz": 7.3, "is_repeat_block": 0, "voice_smooth": 0.82, "label": "uncertain", "note": "116-130秒のE-4/E4/F4山型。まとめた版もまとめない版もユーザーは不満。おそらく音符+ベンドでないと正しく書けない"}
