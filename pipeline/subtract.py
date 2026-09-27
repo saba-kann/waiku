@@ -48,6 +48,29 @@ def subtract_vocal_files(orig_path, offvocal_path, sr=22050):
     return subtract_vocal(orig, offv, sr)
 
 
+def denoise(y, sr, noise_start, noise_end, n_fft=2048, hop_length=512,
+            over_subtract=1.5, floor=0.1):
+    """原曲・オフボーカルがそれぞれ別々にMP3エンコードされていると、量子化ノイズが
+    一致せず引き算で消えない(実測: 休符でもRMSが歌唱部の9割近く残る「砂嵐」状態)。
+    休符区間(noise_start〜noise_end秒、本当に無音/無歌唱な区間を選ぶこと)からノイズの
+    周波数プロファイルを推定し、スペクトル減算で下げる。
+
+    実測(2026-09-27): 休符RMSが歌唱部の88%→68%まで改善(完全には消えない)。
+    ノート単位F1はわずかに悪化(0.31→0.28程度)する一方、frame単位のピッチ一致率は
+    改善した(70.7%→74.7%)。**人間が聴いて確認する用途(レビューツールの音声)には
+    こちらを使う。ノーツの自動書き起こし自体は浄化前の音声で行った方がわずかに良い**
+    (over_subtractを上げすぎるとmusical noiseが増えて逆効果になるので注意)"""
+    noise_seg = y[int(noise_start * sr): int(noise_end * sr)]
+    S_noise = np.abs(librosa.stft(noise_seg, n_fft=n_fft, hop_length=hop_length))
+    noise_profile = np.median(S_noise, axis=1, keepdims=True)
+
+    S = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
+    mag, phase = np.abs(S), np.angle(S)
+    mag_clean = np.maximum(mag - over_subtract * noise_profile, floor * mag)
+    S_clean = mag_clean * np.exp(1j * phase)
+    return librosa.istft(S_clean, hop_length=hop_length, length=len(y))
+
+
 if __name__ == "__main__":
     import sys
     import soundfile as sf
