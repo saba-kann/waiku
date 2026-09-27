@@ -1,0 +1,547 @@
+<title>熱異常 旋律セレクター(165〜241秒)</title>
+<style>
+:root{
+  --bg:#faf8f4; --surface:#ffffff; --surface-2:#f4f1ea;
+  --row-w:#f4f1ea; --row-b:#ebe6da; --row-c:#e6dfcd;
+  --text:#221f2b; --text-dim:#6b6680; --border:#ded7c6;
+  --accent:#e0562c; --accent-ink:#ffffff; --accent-soft:rgba(224,86,44,.12);
+  --excluded:#c9c4d6; --excluded-border:#a29bb5; --excluded-ink:#524d63;
+  --manual:#3f9d63; --manual-ink:#ffffff;
+  --playhead:#c98a00; --good:#3f9d63; --warn:#c94848;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14121a; --surface:#1d1a26; --surface-2:#262231;
+    --row-w:#211d2c; --row-b:#1a1723; --row-c:#171420;
+    --text:#f3efe6; --text-dim:#9691a8; --border:#332e42;
+    --accent:#ff6a3d; --accent-ink:#1a0f08; --accent-soft:rgba(255,106,61,.16);
+    --excluded:#4d4960; --excluded-border:#6b6680; --excluded-ink:#c8c3d8;
+    --manual:#5fd48a; --manual-ink:#0a1f12;
+    --playhead:#ffd23f; --good:#5fd48a; --warn:#ff5470;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14121a; --surface:#1d1a26; --surface-2:#262231;
+  --row-w:#211d2c; --row-b:#1a1723; --row-c:#171420;
+  --text:#f3efe6; --text-dim:#9691a8; --border:#332e42;
+  --accent:#ff6a3d; --accent-ink:#1a0f08; --accent-soft:rgba(255,106,61,.16);
+  --excluded:#4d4960; --excluded-border:#6b6680; --excluded-ink:#c8c3d8;
+  --manual:#5fd48a; --manual-ink:#0a1f12;
+  --playhead:#ffd23f; --good:#5fd48a; --warn:#ff5470;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Noto Sans JP","Zen Kaku Gothic New",system-ui,sans-serif;
+  padding:20px 16px calc(28px + env(safe-area-inset-bottom,0px));
+  max-width:860px; margin:0 auto;
+}
+h1{
+  font-family:"Zen Kaku Gothic New","Noto Sans JP",sans-serif;
+  font-weight:700; font-size:22px; margin:0 0 2px; letter-spacing:.01em;
+}
+.sub{color:var(--text-dim); font-size:13px; margin:0 0 18px; line-height:1.6}
+.sub b{color:var(--text); font-weight:600}
+.panel{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:16px; margin-bottom:14px;
+}
+.hint-box{
+  background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px;
+  padding:12px 14px; font-size:12.5px; line-height:1.7; color:var(--text); margin-bottom:14px;
+}
+.hint-box b{color:var(--accent)}
+.warn-box{
+  background:rgba(201,72,72,.1); border:1px solid var(--warn); border-radius:10px;
+  padding:12px 14px; font-size:12.5px; line-height:1.7; color:var(--text); margin-bottom:14px;
+}
+.warn-box b{color:var(--warn)}
+
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--text-dim); margin-top:10px}
+.legend span{display:inline-flex; align-items:center; gap:5px}
+.swatch{width:12px; height:12px; border-radius:3px; display:inline-block}
+
+.progress-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:4px}
+.progress-num{font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; font-size:16px; font-weight:600}
+.progress-num small{font-size:11px; font-weight:400; color:var(--text-dim); font-family:"Noto Sans JP",sans-serif}
+
+.mode-toggle{display:flex; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; width:fit-content; margin-top:10px}
+.mode-toggle button{
+  border:none; background:var(--surface-2); color:var(--text-dim); font-family:inherit;
+  font-size:13px; font-weight:600; padding:9px 16px; cursor:pointer;
+}
+.mode-toggle button.on{background:var(--accent); color:var(--accent-ink)}
+.mode-hint{font-size:12px; color:var(--text-dim); margin-top:8px; line-height:1.6}
+
+.windows{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; max-height:80px; overflow-y:auto}
+.windows button{
+  font-family:"JetBrains Mono",monospace; font-size:11px; border:1px solid var(--border);
+  background:var(--surface-2); color:var(--text); border-radius:8px; padding:6px 8px; cursor:pointer;
+}
+.windows button.active{border-color:var(--accent); background:var(--accent-soft); font-weight:700}
+
+.nav-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
+.nav-row .navbtn{
+  border:1px solid var(--border); background:var(--surface-2); color:var(--text); border-radius:8px;
+  padding:8px 14px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;
+}
+.nav-row .navbtn:disabled{opacity:.35; cursor:default}
+.nav-title{font-family:"JetBrains Mono",monospace; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums}
+
+.roll-scroll{overflow-x:auto; overflow-y:auto; max-height:70vh; border:1px solid var(--border); border-radius:10px; background:var(--surface-2)}
+svg{display:block}
+.row-label{font-family:"JetBrains Mono",monospace; font-size:9.5px; fill:var(--text-dim)}
+.row-label.c{fill:var(--text); font-weight:700}
+.gridline{stroke:var(--border); stroke-width:1}
+.gridline.major{stroke:var(--text-dim); stroke-opacity:.35}
+.gridline.rangeedge{stroke:var(--warn); stroke-opacity:.5; stroke-dasharray:4 3}
+.note{cursor:pointer; transition:opacity .1s}
+.note.kept{fill:var(--accent); stroke:color-mix(in srgb, var(--accent) 70%, black); stroke-width:1}
+.note.excluded{fill:var(--excluded); stroke:var(--excluded-border); stroke-width:1; opacity:.5}
+.note.manual{fill:var(--manual); stroke:color-mix(in srgb, var(--manual) 70%, black); stroke-width:1}
+.note.suspect{stroke:var(--warn); stroke-width:2; stroke-dasharray:3 2}
+.note-label{font-family:"JetBrains Mono",monospace; font-size:9px; pointer-events:none}
+.bgcatch{fill:transparent; cursor:crosshair}
+.playhead{stroke:var(--playhead); stroke-width:2; opacity:0}
+
+.controls-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px}
+.btn{
+  border:1px solid var(--border); background:var(--surface-2); color:var(--text); border-radius:9px;
+  padding:9px 15px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn.primary{background:var(--accent); color:var(--accent-ink); border-color:transparent}
+.btn.real{background:var(--good); color:#06210f; border-color:transparent}
+.btn:active{transform:scale(.97)}
+.btn.danger-arm{background:#c94848; color:#fff; border-color:transparent}
+
+.export-lists{display:grid; grid-template-columns:1fr; gap:12px}
+@media (min-width:600px){.export-lists{grid-template-columns:1fr 1fr}}
+.export-col label{font-size:12px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px; letter-spacing:.02em}
+textarea{
+  width:100%; min-height:150px; resize:vertical; background:var(--surface-2); color:var(--text);
+  border:1px solid var(--border); border-radius:8px; padding:10px; font-family:"JetBrains Mono",monospace;
+  font-size:11.5px; line-height:1.6;
+}
+.copy-status{font-size:12px; color:var(--good); min-height:16px; margin-top:4px}
+footer{color:var(--text-dim); font-size:11.5px; text-align:center; margin-top:18px; line-height:1.7}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<h1>熱異常 旋律セレクター(165〜241秒)</h1>
+<p class="sub">この区間は自動書き起こし(差分音源+自己参照浄化)の下書きから始めます。精度の目安は
+frame一致率71%・ノートF1 0.3弱と<b>荒いです</b>。前区間までと違い「外すだけ」では足りないので、
+<b>実際の音声を聴きながら、足りない音を足す・違う音を消す</b>作業になります。</p>
+
+<div class="hint-box">
+  <b>使い方</b> ― オレンジ=自動検出された音(タップで除外⇄復活)。緑=あなたが追加した音
+  (タップで削除)。何もない場所をタップすると、その時刻・音高に新しい音を追加します
+  (デフォルト長0.164秒=8分音符。長さを変えたい時は短い音を並べてください)。
+  赤い破線の枠がついた音は、この曲の歌声の音域(G#3〜G#6)から外れている「怪しい」自動検出です。
+</div>
+<div class="warn-box">
+  <b>注意</b> ― 229秒以降、自動検出がMIDI36前後(かなり低いC2あたり)の音を大量に検出していますが、
+  この曲の歌声の音域よりずっと低く、ほぼ確実に誤検出(ボーカルが既に終わっている、または
+  差分音源に残った低音成分を拾っている)です。ここは実音声を聴いて、歌が本当にあるか確認してください。
+</div>
+
+<div class="panel">
+  <div class="progress-row">
+    <div class="progress-num" id="progressNum">0 <small>件除外</small></div>
+    <div class="progress-num" id="manualNum" style="color:var(--good)">0 <small>件追加</small></div>
+    <div class="progress-num" id="finalNum" style="color:var(--accent)">168 <small>確定音数</small></div>
+  </div>
+  <div class="mode-toggle" id="modeToggle">
+    <button id="modeListen" class="on">聴く</button>
+    <button id="modeExclude">編集(除外/追加)</button>
+  </div>
+  <div class="mode-hint" id="modeHint">タップすると音が鳴るだけです。編集はしません。</div>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--accent)"></span>自動・採用中</span>
+    <span><span class="swatch" style="background:var(--excluded)"></span>自動・除外済み</span>
+    <span><span class="swatch" style="background:var(--manual)"></span>手動追加</span>
+    <span><span class="swatch" style="border:2px dashed var(--warn); width:8px; height:8px"></span>音域外(要確認)</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="windows" id="windowChips"></div>
+  <div class="nav-row">
+    <button class="navbtn" id="prevWin">← 前の4秒</button>
+    <div class="nav-title" id="winTitle">165.0–169.0秒</div>
+    <button class="navbtn" id="nextWin">次の4秒 →</button>
+  </div>
+  <div class="roll-scroll">
+    <svg id="roll" width="900" height="900" viewBox="0 0 900 900"></svg>
+  </div>
+  <div class="controls-row">
+    <button class="btn real" id="realPlayBtn">🎤 実際の音声を再生(この4秒)</button>
+    <button class="btn primary" id="playBtn">▶ 確定音を合成音で再生</button>
+    <button class="btn" id="stopBtn">■ 停止</button>
+  </div>
+  <audio id="realAudio" src="vocal_165_241.wav" preload="metadata"></audio>
+</div>
+
+<div class="panel">
+  <div class="controls-row" style="margin-top:0">
+    <span style="font-size:12.5px; color:var(--text-dim)">現在の編集結果を書き出します。</span>
+    <button class="btn" id="resetBtn">編集を全リセット(自動検出の状態に戻す)</button>
+  </div>
+  <div class="export-lists" style="margin-top:12px">
+    <div class="export-col">
+      <label>確定した音の一覧(〇〇秒のE♭4形式)</label>
+      <textarea id="humanOut" readonly></textarea>
+      <button class="btn" id="copyHuman" style="margin-top:6px">一覧をコピー</button>
+      <div class="copy-status" id="copyHumanStatus"></div>
+    </div>
+    <div class="export-col">
+      <label>[start,end,midi]形式のJSON(旋律データと同じ形)</label>
+      <textarea id="jsonOut" readonly></textarea>
+      <button class="btn" id="copyJson" style="margin-top:6px">JSONをコピー</button>
+      <div class="copy-status" id="copyJsonStatus"></div>
+    </div>
+  </div>
+</div>
+
+<footer>元データ: data/candidates_165-241_auto.json(168音、自動書き起こし)。
+実音声: 差分抽出済みボーカル(16kHzモノラル)。選択は自動保存されます(このブラウザのみ)。</footer>
+
+<script>
+const AUTO_NOTES = [[165.026, 165.295, 48], [165.623, 165.908, 73], [166.013, 166.279, 80], [166.338, 166.934, 72], [166.934, 167.262, 68], [167.262, 168.41, 64], [168.451, 169.557, 53], [169.623, 170.436, 42], [170.541, 170.869, 46], [170.869, 170.935, 48], [171.033, 171.197, 63], [171.197, 171.689, 65], [171.689, 172.073, 64], [172.18, 172.508, 63], [172.508, 172.836, 65], [172.836, 174.639, 70], [174.803, 174.967, 37], [175.185, 175.73, 42], [176.044, 176.443, 80], [176.531, 176.984, 61], [177.098, 177.262, 60], [177.262, 177.426, 70], [177.426, 177.646, 68], [177.754, 178.41, 65], [178.41, 178.738, 63], [178.807, 180.27, 53], [180.328, 180.943, 42], [181.033, 181.257, 46], [181.361, 181.525, 65], [181.525, 181.689, 63], [181.689, 181.852, 65], [181.852, 182.016, 63], [182.016, 182.18, 65], [182.18, 182.344, 63], [182.441, 182.731, 80], [182.929, 183.0, 63], [183.0, 183.164, 65], [183.164, 183.328, 63], [183.328, 183.656, 61], [183.73, 185.131, 58], [185.295, 185.623, 37], [185.787, 186.115, 36], [186.279, 186.443, 36], [186.443, 186.493, 37], [186.667, 186.841, 49], [187.004, 187.262, 80], [187.59, 187.654, 72], [187.863, 187.918, 72], [187.918, 188.246, 68], [188.246, 189.279, 65], [189.337, 189.557, 63], [189.557, 190.049, 65], [190.049, 190.869, 63], [190.869, 191.148, 65], [191.197, 191.525, 69], [191.525, 191.852, 70], [191.852, 192.18, 80], [192.228, 192.286, 73], [192.425, 192.508, 73], [192.716, 193.11, 68], [193.164, 193.273, 65], [193.328, 193.492, 64], [193.656, 194.202, 65], [194.411, 194.639, 65], [194.639, 194.803, 63], [194.803, 196.396, 64], [196.607, 196.77, 84], [196.77, 197.098, 82], [197.139, 197.426, 85], [197.426, 197.754, 92], [197.871, 198.358, 60], [198.463, 198.738, 80], [198.738, 199.775, 77], [200.049, 200.541, 77], [200.587, 201.361, 75], [201.361, 202.344, 81], [202.398, 202.672, 92], [202.672, 202.77, 86], [203.0, 203.328, 84], [203.328, 203.656, 80], [203.656, 204.697, 77], [205.034, 205.533, 76], [205.707, 205.951, 76], [206.021, 206.207, 76], [206.279, 206.532, 77], [206.77, 206.934, 75], [207.098, 207.182, 73], [207.193, 207.59, 70], [207.59, 208.246, 76], [208.574, 208.784, 77], [208.854, 209.016, 75], [209.016, 209.23, 77], [209.393, 210.049, 76], [210.213, 210.653, 76], [210.869, 211.197, 75], [211.197, 211.525, 76], [211.689, 212.18, 75], [212.344, 212.627, 79], [212.836, 212.905, 79], [212.905, 213.0, 77], [213.0, 213.164, 75], [213.265, 213.328, 75], [213.328, 214.043, 76], [214.148, 214.311, 75], [214.311, 214.967, 76], [215.204, 215.295, 75], [215.295, 215.459, 77], [215.459, 216.115, 76], [216.203, 216.279, 75], [216.279, 216.443, 77], [216.443, 216.667, 75], [216.853, 216.992, 75], [217.426, 217.754, 80], [218.082, 218.293, 77], [218.41, 218.574, 75], [218.574, 218.738, 77], [219.066, 219.128, 79], [219.128, 219.23, 77], [219.23, 219.557, 75], [219.674, 219.953, 75], [220.049, 220.255, 80], [220.377, 220.541, 58], [220.591, 220.765, 61], [220.916, 221.197, 56], [221.265, 221.361, 58], [221.361, 221.689, 56], [227.813, 228.149, 80], [228.196, 228.246, 69], [228.246, 228.637, 70], [228.738, 228.902, 46], [228.902, 229.066, 36], [229.23, 229.393, 36], [229.485, 229.763, 36], [229.885, 229.926, 39], [229.937, 230.049, 36], [230.262, 230.377, 36], [230.541, 230.705, 36], [230.796, 231.033, 36], [231.249, 231.361, 36], [231.586, 231.737, 36], [231.852, 232.016, 36], [232.108, 232.18, 36], [232.18, 232.224, 38], [232.224, 232.387, 36], [232.387, 232.422, 38], [232.508, 232.631, 36], [232.836, 232.909, 37], [232.909, 232.956, 36], [233.211, 233.281, 36], [233.42, 233.656, 36], [233.82, 233.984, 36], [234.198, 234.311, 36], [234.523, 234.639, 36], [234.721, 234.967, 37], [235.131, 235.295, 36], [235.459, 235.623, 36], [235.623, 235.673, 37], [235.787, 235.951, 36], [236.067, 236.172, 37], [236.172, 236.279, 36], [236.443, 236.555, 37], [236.77, 236.934, 36], [237.147, 237.217, 36], [237.333, 237.59, 36], [237.809, 238.134, 37], [238.134, 238.246, 36], [238.41, 238.459, 39], [238.459, 238.622, 36]];
+
+const STORAGE_KEY = 'netsu_ijou_165_241_edit_v1';
+const NOTE_NAMES = ["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"];
+function midiName(m){ return NOTE_NAMES[((m%12)+12)%12] + (Math.floor(m/12)-1); }
+function isBlackKey(m){ return [1,3,6,8,10].includes(((m%12)+12)%12); }
+function isCKey(m){ return ((m%12)+12)%12 === 0; }
+const VOCAL_LO = 56, VOCAL_HI = 92;
+function isSuspect(m){ return m < VOCAL_LO || m > VOCAL_HI; }
+
+const SONG_START = 165.0, SONG_END = 241.136;
+const MIDI_MIN = 34, MIDI_MAX = 94;
+const ROW_H = 900 / (MIDI_MAX - MIDI_MIN + 1);
+const LABEL_W = 40;
+const PX_PER_SEC = 215;
+const WINDOW_SIZE = 4;
+const WIN_STARTS = [];
+for(let t = SONG_START; t < SONG_END; t += WINDOW_SIZE) WIN_STARTS.push(Math.round(t*1000)/1000);
+
+let excluded = new Set();
+let manual = [];
+try{
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  if(saved.excluded) excluded = new Set(saved.excluded);
+  if(saved.manual) manual = saved.manual;
+}catch(e){}
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({excluded:[...excluded], manual})); }catch(e){}
+}
+
+let mode = 'listen';
+let winIdx = 0;
+let audioCtx = null;
+let activeNodes = [];
+let playTimer = null;
+let playRAF = null;
+
+function getCtx(){
+  if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+  if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+  return audioCtx;
+}
+
+function playToneAt(midi, t0, dur){
+  const ctx = getCtx();
+  const freq = 440 * Math.pow(2, (midi-69)/12);
+  const o1 = ctx.createOscillator(); o1.type = 'triangle'; o1.frequency.value = freq;
+  const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = freq*2;
+  const g2 = ctx.createGain(); g2.gain.value = 0.12;
+  const g = ctx.createGain();
+  o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(ctx.destination);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(0.32, t0+0.01);
+  g.gain.exponentialRampToValueAtTime(0.09, t0+0.15);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur+0.08);
+  o1.start(t0); o2.start(t0);
+  const stopAt = t0+dur+0.1;
+  o1.stop(stopAt); o2.stop(stopAt);
+  activeNodes.push(o1,o2);
+  o1.onended = () => { activeNodes = activeNodes.filter(n=>n!==o1); };
+}
+function playSingle(midi, dur){
+  const ctx = getCtx();
+  playToneAt(midi, ctx.currentTime, dur || 0.38);
+}
+function stopAllAudio(){
+  activeNodes.forEach(n=>{ try{ n.stop(); }catch(e){} });
+  activeNodes = [];
+  if(playTimer){ clearTimeout(playTimer); playTimer = null; }
+  if(playRAF){ cancelAnimationFrame(playRAF); playRAF = null; }
+  const ph = document.querySelector('.playhead');
+  if(ph) ph.style.opacity = 0;
+  const ra = document.getElementById('realAudio');
+  ra.pause();
+}
+
+function currentWindow(){
+  const start = WIN_STARTS[winIdx];
+  const end = Math.min(SONG_END, start + WINDOW_SIZE);
+  return {start, end};
+}
+
+function autoNotesInWindow(start, end){
+  const out = [];
+  AUTO_NOTES.forEach((n,i)=>{ if(n[0] >= start-0.001 && n[0] < end-0.001) out.push(i); });
+  return out;
+}
+function manualNotesInWindow(start, end){
+  const out = [];
+  manual.forEach((n,i)=>{ if(n[0] >= start-0.001 && n[0] < end-0.001) out.push(i); });
+  return out;
+}
+
+function updateModeUI(){
+  document.getElementById('modeListen').classList.toggle('on', mode==='listen');
+  document.getElementById('modeExclude').classList.toggle('on', mode==='exclude');
+  document.getElementById('modeHint').textContent = mode==='listen'
+    ? 'タップすると音が鳴るだけです。編集はしません。'
+    : 'タップで自動検出を除外/復活、手動追加を削除。何もない場所のタップで新しい音を追加します。';
+}
+
+function finalNotes(){
+  const kept = AUTO_NOTES.filter((n,i)=>!excluded.has(i));
+  return [...kept, ...manual].sort((a,b)=>a[0]-b[0]);
+}
+
+function updateProgress(){
+  document.getElementById('progressNum').innerHTML = excluded.size + ' <small>件除外</small>';
+  document.getElementById('manualNum').innerHTML = manual.length + ' <small>件追加</small>';
+  document.getElementById('finalNum').innerHTML = finalNotes().length + ' <small>確定音数</small>';
+}
+
+function windowLabel(i){
+  const {start,end} = {start:WIN_STARTS[i], end:Math.min(SONG_END, WIN_STARTS[i]+WINDOW_SIZE)};
+  return start.toFixed(0) + '–' + end.toFixed(0);
+}
+
+function renderChips(){
+  const wrap = document.getElementById('windowChips');
+  wrap.innerHTML = '';
+  WIN_STARTS.forEach((s,i)=>{
+    const btn = document.createElement('button');
+    btn.className = i===winIdx ? 'active' : '';
+    btn.textContent = windowLabel(i);
+    btn.onclick = () => { stopAllAudio(); winIdx = i; renderAll(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderRoll(){
+  const {start, end} = currentWindow();
+  const svg = document.getElementById('roll');
+  const winSec = end - start;
+  const gridW = winSec * PX_PER_SEC;
+  const totalW = LABEL_W + gridW;
+  svg.setAttribute('width', totalW);
+  svg.setAttribute('viewBox', '0 0 ' + totalW + ' 900');
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const mk = (tag, attrs) => { const el = document.createElementNS(ns, tag); for(const k in attrs) el.setAttribute(k, attrs[k]); return el; };
+
+  for(let m = MIDI_MIN; m <= MIDI_MAX; m++){
+    const rowIdx = MIDI_MAX - m;
+    const y = rowIdx * ROW_H;
+    const fill = isCKey(m) ? 'var(--row-c)' : (isBlackKey(m) ? 'var(--row-b)' : 'var(--row-w)');
+    svg.appendChild(mk('rect', {x:0, y, width:totalW, height:ROW_H, fill}));
+    svg.appendChild(mk('line', {class: isCKey(m)?'gridline major':'gridline', x1:LABEL_W, y1:y, x2:totalW, y2:y}));
+    const lbl = mk('text', {class: isCKey(m)?'row-label c':'row-label', x:6, y:y+ROW_H*0.68});
+    lbl.textContent = midiName(m);
+    svg.appendChild(lbl);
+  }
+  const yLo = (MIDI_MAX-VOCAL_HI)*ROW_H, yHi = (MIDI_MAX-VOCAL_LO+1)*ROW_H;
+  svg.appendChild(mk('line', {class:'gridline rangeedge', x1:0, y1:yLo, x2:totalW, y2:yLo}));
+  svg.appendChild(mk('line', {class:'gridline rangeedge', x1:0, y1:yHi, x2:totalW, y2:yHi}));
+  svg.appendChild(mk('line', {class:'gridline major', x1:LABEL_W, y1:0, x2:LABEL_W, y2:900}));
+
+  for(let s = 0; s <= winSec; s += 0.5){
+    const x = LABEL_W + s*PX_PER_SEC;
+    svg.appendChild(mk('line', {class: (s%1===0)?'gridline major':'gridline', x1:x, y1:0, x2:x, y2:900}));
+  }
+
+  // background catcher for "tap empty space to add note"
+  const bg = mk('rect', {x:LABEL_W, y:0, width:gridW, height:900, class:'bgcatch'});
+  bg.addEventListener('click', (ev)=>{
+    if(mode !== 'exclude') return;
+    const rect = svg.getBoundingClientRect();
+    const scale = rect.width / totalW;
+    const px = (ev.clientX - rect.left)/scale;
+    const py = (ev.clientY - rect.top)/scale;
+    const t = start + (px - LABEL_W)/PX_PER_SEC;
+    const rowIdx = Math.floor(py/ROW_H);
+    const m = MIDI_MAX - rowIdx;
+    addManualNote(Math.round(t*1000)/1000, m);
+  });
+  svg.appendChild(bg);
+
+  const autoIdxs = autoNotesInWindow(start, end);
+  autoIdxs.forEach(idx=>{
+    const [s,e,m] = AUTO_NOTES[idx];
+    const isExcluded = excluded.has(idx);
+    drawNote(svg, mk, s-start, e-start, m, isExcluded?'excluded':'kept', () => {
+      playSingle(m, Math.min(0.6, Math.max(0.15, e-s)));
+      if(mode==='exclude'){
+        if(excluded.has(idx)) excluded.delete(idx); else excluded.add(idx);
+        saveState(); renderAll();
+      }
+    }, totalW, LABEL_W);
+  });
+  const manIdxs = manualNotesInWindow(start, end);
+  manIdxs.forEach(idx=>{
+    const [s,e,m] = manual[idx];
+    drawNote(svg, mk, s-start, e-start, m, 'manual', () => {
+      playSingle(m, Math.min(0.6, Math.max(0.15, e-s)));
+      if(mode==='exclude'){
+        manual.splice(idx,1);
+        saveState(); renderAll();
+      }
+    }, totalW, LABEL_W);
+  });
+
+  const ph = mk('line', {class:'playhead', x1:LABEL_W, y1:0, x2:LABEL_W, y2:900});
+  svg.appendChild(ph);
+
+  document.getElementById('winTitle').textContent = start.toFixed(1) + '–' + end.toFixed(1) + '秒';
+  document.getElementById('prevWin').disabled = winIdx===0;
+  document.getElementById('nextWin').disabled = winIdx===WIN_STARTS.length-1;
+}
+
+function drawNote(svg, mk, s, e, m, cls, onClick, totalW, LABEL_W){
+  const x = LABEL_W + s*PX_PER_SEC;
+  const w = Math.max(6, (e-s)*PX_PER_SEC);
+  const rowIdx = MIDI_MAX - m;
+  const y = rowIdx*ROW_H + 1;
+  const h = ROW_H - 2;
+  const rect = mk('rect', {
+    x, y, width:w, height:h, rx:3,
+    class: 'note ' + cls + (isSuspect(m) ? ' suspect' : '')
+  });
+  rect.addEventListener('click', (ev)=>{ ev.stopPropagation(); onClick(); });
+  svg.appendChild(rect);
+  if(w > 22){
+    const lbl = mk('text', {x:x+4, y:y+h*0.72, class:'note-label',
+      fill: cls==='manual' ? 'var(--manual-ink)' : (cls==='excluded' ? 'var(--excluded-ink)' : 'var(--accent-ink)')});
+    lbl.textContent = midiName(m);
+    lbl.style.pointerEvents = 'none';
+    svg.appendChild(lbl);
+  }
+}
+
+function addManualNote(t, m){
+  const dur = 60/183/2; // 8分音符
+  manual.push([t, Math.round((t+dur)*1000)/1000, m]);
+  saveState();
+  playSingle(m, dur);
+  renderAll();
+}
+
+function renderExport(){
+  const list = finalNotes();
+  const human = list.map(([s,e,m]) => s.toFixed(2) + '秒の' + midiName(m)).join('\n');
+  document.getElementById('humanOut').value = human || '(まだ確定音なし)';
+  document.getElementById('jsonOut').value = JSON.stringify(
+    list.map(([s,e,m]) => [Math.round(s*1000)/1000, Math.round(e*1000)/1000, m]));
+}
+
+function renderAll(){
+  updateModeUI();
+  updateProgress();
+  renderChips();
+  renderRoll();
+  renderExport();
+}
+
+document.getElementById('modeListen').onclick = () => { mode='listen'; updateModeUI(); };
+document.getElementById('modeExclude').onclick = () => { mode='exclude'; updateModeUI(); };
+document.getElementById('prevWin').onclick = () => { if(winIdx>0){ stopAllAudio(); winIdx--; renderAll(); } };
+document.getElementById('nextWin').onclick = () => { if(winIdx<WIN_STARTS.length-1){ stopAllAudio(); winIdx++; renderAll(); } };
+
+document.getElementById('playBtn').onclick = () => {
+  stopAllAudio();
+  const ctx = getCtx();
+  const {start, end} = currentWindow();
+  const winSec = end - start;
+  const startAt = ctx.currentTime + 0.08;
+  const notes = finalNotes().filter(n => n[0] >= start && n[0] < end);
+  notes.forEach(([s,e,m])=>{
+    const dur = Math.min(1.2, Math.max(0.12, e-s));
+    playToneAt(m, startAt + (s-start), dur);
+  });
+  const t0 = performance.now();
+  const svg = document.getElementById('roll');
+  const ph = svg.querySelector('.playhead');
+  function step(){
+    const elapsed = (performance.now()-t0)/1000 - 0.08;
+    if(elapsed < 0){ playRAF = requestAnimationFrame(step); return; }
+    if(elapsed > winSec){ ph.style.opacity = 0; return; }
+    ph.style.opacity = 1;
+    ph.setAttribute('x1', LABEL_W + elapsed*PX_PER_SEC);
+    ph.setAttribute('x2', LABEL_W + elapsed*PX_PER_SEC);
+    playRAF = requestAnimationFrame(step);
+  }
+  playRAF = requestAnimationFrame(step);
+  playTimer = setTimeout(()=>{ ph.style.opacity = 0; }, (winSec+0.3)*1000);
+};
+document.getElementById('stopBtn').onclick = stopAllAudio;
+
+document.getElementById('realPlayBtn').onclick = () => {
+  stopAllAudio();
+  const {start, end} = currentWindow();
+  const ra = document.getElementById('realAudio');
+  ra.currentTime = start - SONG_START;
+  ra.play();
+  const onTime = () => {
+    if(ra.currentTime >= end - SONG_START){
+      ra.pause();
+      ra.removeEventListener('timeupdate', onTime);
+    }
+  };
+  ra.addEventListener('timeupdate', onTime);
+};
+
+let resetArmed = false;
+const resetBtn = document.getElementById('resetBtn');
+resetBtn.onclick = () => {
+  if(!resetArmed){
+    resetArmed = true;
+    resetBtn.textContent = '本当にリセット？もう一度押す';
+    resetBtn.classList.add('danger-arm');
+    setTimeout(()=>{ resetArmed=false; resetBtn.textContent='編集を全リセット(自動検出の状態に戻す)'; resetBtn.classList.remove('danger-arm'); }, 3000);
+  }else{
+    excluded = new Set();
+    manual = [];
+    saveState();
+    resetArmed = false;
+    resetBtn.textContent = '編集を全リセット(自動検出の状態に戻す)';
+    resetBtn.classList.remove('danger-arm');
+    renderAll();
+  }
+};
+
+function copyText(text, statusEl){
+  navigator.clipboard.writeText(text).then(()=>{
+    statusEl.textContent = 'コピーしました';
+    setTimeout(()=>{ statusEl.textContent=''; }, 2000);
+  }).catch(()=>{
+    statusEl.textContent = 'コピーできませんでした。テキストを選択してコピーしてください。';
+  });
+}
+document.getElementById('copyHuman').onclick = () => copyText(document.getElementById('humanOut').value, document.getElementById('copyHumanStatus'));
+document.getElementById('copyJson').onclick = () => copyText(document.getElementById('jsonOut').value, document.getElementById('copyJsonStatus'));
+
+renderAll();
+</script>
